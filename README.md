@@ -1,6 +1,8 @@
 deploy_uac
 =========
 
+![ansible-lint workflow](https://github.com/straysheep-dev/ansible-role-deploy_uac/actions/workflows/ansible-lint.yml/badge.svg) ![shellcheck workflow](https://github.com/straysheep-dev/ansible-role-deploy_uac/actions/workflows/shellcheck.yml/badge.svg)
+
 Drops the latest release of [UAC (Unix-like Artifacts Collector)](https://github.com/tclahr/uac) and any precompiled binaries found in this role's `files/` folder, across an inventory to gather and retrieve evidence.
 
 If you create precompiled binaries, make sure [the required directory structure](https://tclahr.github.io/uac-docs/#using-your-binary-files) exists under `files/` like this:
@@ -137,13 +139,8 @@ ansible-playbook -i <inventory> -e "@~/vault.yml" --vault-pass-file <(cat <<<$AN
 License
 -------
 
-[MIT](./LICENSE)
-
-This role is released under the MIT license.
-
-[Apache-2.0](https://github.com/tclahr/uac/blob/main/LICENSE)
-
-[uac](https://github.com/tclahr/uac) itself is available under the Apache-2.0 license.
+- [MIT](./LICENSE): This role is released under the MIT license.
+- [Apache-2.0](https://github.com/tclahr/uac/blob/main/LICENSE): [uac](https://github.com/tclahr/uac) itself is available under the Apache-2.0 license.
 
 Author Information
 ------------------
