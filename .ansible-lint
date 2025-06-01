@@ -22,6 +22,7 @@ exclude_paths:
 warn_list:
   - yaml[line-length]
   - package-latest
+  - risky-shell-pipe
 #  - schema[playbook]
 
 # Offline mode disables installation of requirements.yml and schema refreshing

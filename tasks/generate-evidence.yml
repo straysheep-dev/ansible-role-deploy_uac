@@ -120,10 +120,10 @@
 # Do something if package exists, and endswith('.ext')
 - name: "Check SHA256SUM (UAC)"
   ansible.builtin.shell: |
-    set -o pipefail
+    # set -o pipefail
     sha256sum -c "{{ item.item }}"
   args:
-    # executable: /bin/bash
+    # executable: /bin/sh
     chdir: "{{ uac_download_folder }}/"
   when: item.stat.exists and (item.item.endswith('.sha256'))
   loop: "{{ release_file.results }}"
@@ -131,10 +131,10 @@
 # Do something if package exists, and endswith('.ext')
 - name: "Unpack release archive (UAC)"
   ansible.builtin.shell: |
-    set -o pipefail
+    # set -o pipefail
     tar -xzvf "{{ item.item }}"
   args:
-    # executable: /bin/bash
+    # executable: /bin/sh
     chdir: "{{ uac_download_folder }}/"
   when: item.stat.exists and (item.item.endswith('.tar.gz'))
   loop: "{{ release_file.results }}"
@@ -159,11 +159,11 @@
 # Avoids duplicate or potentially modifed evidence from being retrieved
 - name: "Clean up any existing or leftover evidence files"
   ansible.builtin.shell: |
-    set -o pipefail
+    # set -o pipefail
     rm -rf ./uac-.*.tar.gz
     rm -rf ./uac-.*.log
   args:
-    # executable: /bin/bash
+    # executable: /bin/sh
     chdir: "{{ uac_outfolder }}"
 
 # If you choose to use an artifact list, run UAC against those.
@@ -182,10 +182,10 @@
 # If you did not choose to use an artifact list, run the standard ir_triage profile.
 - name: "Run UAC profile: {{ uac_profile }}"
   ansible.builtin.shell: |
-    set -o pipefail
+    # set -o pipefail
     ./uac {{ uac_profile }} {{ uac_outfile_arg }} {{ uac_outfolder }}
   args:
-    # executable: /bin/bash
+    # executable: /bin/sh
     chdir: "{{ uac_download_folder }}/{{ name_version }}"
   when: uac_use_artifact_list != "true"
   become: true

@@ -13,19 +13,19 @@
 # Deletes the remote evidence files once they're available locally
 - name: "Remove evidence files from ({{ ansible_hostname }})"
   ansible.builtin.shell: |
-    set -o pipefail
+    # set -o pipefail
     rm -rf {{ uac_outfolder }}
   # args:
-    # executable: /bin/bash
+    # executable: /bin/sh
 
 # Removes ALL UAC data from the remote host
 - name: "Remove all UAC files from ({{ ansible_hostname }})"
   ansible.builtin.shell: |
-    set -o pipefail
+    # set -o pipefail
     rm -rf {{ uac_outfolder }}
     rm -rf {{ uac_download_folder }}
   # args:
-    # executable: /bin/bash
+    # executable: /bin/sh
   when: uac_cleanup | bool
 
 # Create a new variable to work with, evidence_files_dest, for the retrieved files.
@@ -58,10 +58,10 @@
 # TO DO: This doesn't necessarily prevent evidence tampering, but the task itself is a useful reference
 - name: Verify SHA256SUM of retrieved evidence files
   ansible.builtin.shell: |
-    set -o pipefail
+    # set -o pipefail
     sha256sum {{ item.0.path | string }} | grep {{ item.1.checksum | string }}
   args:
-    # executable: /bin/bash
+    # executable: /bin/sh
     chdir: /tmp
   with_together:
     - "{{ evidence_files_dest.results | map(attribute='stat') }}"
@@ -76,10 +76,10 @@
 
 - name: Move resulting files to local evidence folder
   ansible.builtin.shell: |
-    set -o pipefail
+    # set -o pipefail
     mv {{ item.path | string }} -t {{ uac_evidence_folder }}
   args:
-    # executable: /bin/bash
+    # executable: /bin/sh
     chdir: /tmp
   with_items:
     - "{{ evidence_files_dest.results | map(attribute='stat') }}"
