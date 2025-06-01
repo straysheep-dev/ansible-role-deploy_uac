@@ -53,6 +53,11 @@ fatal: [10.10.10.55]: FAILED! => {"ansible_facts": {}, "changed": false, "failed
 > [!TIP]
 > The versions found to be the most successful for these use cases are Ansible 2.13.0 or above.
 
+This role has been tested using:
+
+- ansible-playbook [core 2.17.12]
+- ansible-playbook [core 2.13.0]
+
 **Installing Older Versions of Ansible**
 
 See: [Ansible Community Changelogs](https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-community-changelogs)
