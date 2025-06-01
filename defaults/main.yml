@@ -1,0 +1,29 @@
+---
+# defaults file for deploy_uac
+
+uac_retrieve_evidence: true          # Option to not retrieve evidence locally, and leave it on the remote machine, mainly for debugging
+uac_cleanup: false                   # Should be changed to true in a continuous live response scenario, so you have the best chance of using trustworthy tools and not being seen
+uac_download_folder: "/tmp/uac.tmp"  # Modify this to change where UAC drops
+uac_profile: "-p ir_triage"          # Default is "ir_triage", can also be "full" or "offline"
+
+uac_outfile_name: "uac-{{ ansible_hostname }}-{{ ansible_system | lower }}-{{ ansible_date_time.iso8601_basic_short }}"
+# The -o option has not yet been added to the latest release
+# uac_outfile_arg: "-o {{ uac_outfile_name }}"                  # Uses the Ansible variables above, to access the filename as a variable
+uac_outfile_arg: ""                                           # Leave this variable empty to use the default filename of uac-%hostname%-%os%-%timestamp%
+uac_outfolder: "{{ uac_download_folder }}/results"            # Where to write the resulting evidence archive, should be its own folder
+
+uac_evidence_folder: "/home/{{ ansible_facts['env']['USER'] }}/uac-evidence"  # Local folder where evidence archives are retrieved and stored
+
+uac_use_artifact_list: false        # Set to true to use the artifacts listed below
+# Use this to collect a list of specific artifacts, otherwise it will gather everything -p <PROFILE> is configured to collect
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_filters.html#manipulating-strings
+uac_artifacts_list:
+  - live_response/system/ebpf.yaml
+  - live_response/system/kernel_modules.yaml
+  - live_response/system/modinfo.yaml
+  - live_response/system/lsmod.yaml
+  - live_response/system/hidden_files.yaml
+  - live_response/system/sys_modules.yaml
+  - live_response/hardware/dmesg.yaml
+  - live_response/process/strings_running_processes.yaml
+  - live_response/process/procstat.yaml

@@ -1,0 +1,15 @@
+---
+# tasks file for deploy_uac
+
+- name: "Include evidence generation tasks"
+  include_tasks: generate-evidence.yml
+  when: (ansible_facts['system'] == "Linux") or
+        (ansible_facts['system'] == "FreeBSD")
+
+- name: "Include evidence retrieval tasks"
+  include_tasks: retrieve-evidence.yml
+  when: ((ansible_facts['system'] == "Linux") or
+        (ansible_facts['system'] == "FreeBSD")) and
+        (uac_retrieve_evidence | bool)
+
+# TO DO: test on OpenBSD, other platforms

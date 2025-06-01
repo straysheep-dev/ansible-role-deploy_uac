@@ -1,0 +1,222 @@
+---
+# deploy_uac/tasks/generate-evidence.yml
+
+# It seems like remote variables should be accessed with `ansible_hostname` and not `ansible_facts['env']['HOSTNAME']`
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_vars_facts.html
+
+- name: "Ensure temporary download folder exists"
+  ansible.builtin.file:
+    path: "{{ uac_download_folder }}"
+    state: directory
+    mode: '0700'
+
+- name: "Ensure temporary working folder exists"
+  ansible.builtin.file:
+    path: "{{ uac_outfolder }}"
+    state: directory
+    mode: '0700'
+
+# This section was taken from https://github.com/straysheep-dev/ansible-role-build_kali_desktop/blob/main/tasks/tools-TEMPLATE.yml#L49
+# ================================
+# External git release files (UAC)
+# ================================
+# Query the GitHub API, similar to how the sliver c2 installer works
+# https://github.com/BishopFox/sliver/blob/d0e5fbb68081ea8853e4cb709cffb19fec1f675d/docs/sliver-docs/public/install#L98
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/uri_module.html#examples
+# https://stackoverflow.com/questions/50966777/ansible-download-latest-release-binary-from-github-repo
+# https://stackoverflow.com/questions/65231649/get-specific-data-from-github-api-url-via-ansible
+# If you're debugging and trying to parse JSON response data from local OR remote JSON files (not url responses), opt to use ansible.builtin.slurp to ingest the data:
+#   https://stackoverflow.com/questions/35403769/how-to-read-json-file-using-ansible
+#     https://stackoverflow.com/a/63516424
+#   https://docs.ansible.com/ansible/latest/collections/ansible/builtin/slurp_module.html
+# For complex data parsing:
+# https://docs.ansible.com/ansible/latest/playbook_guide/complex_data_manipulation.html
+# JSON response structure:
+# The "top level" data returned by GitHub's API is a dictionary { key1:value,key2:value... }
+# "assets" is a top level key with a list of dictionaries as its value { ... "assets": [{key1:value, key2:value...}] ...}
+# Remember that lists work based on array elements [<int>] for example [0] is the first element in an arrary
+# Dictionaries are key:value pairs, so in other words keys can be thought of as the "names"
+# Take the following JSON data structures:
+#   ok: [localhost] => (item={'assets': [{'foo': [{'bar': 'findme'}]}]})
+#   ok: [localhost] => (item={'assets': [{'foo': [{'bar': 'findme2'}, {'bar': 'findme4'}, {'bar': 'findme5'}]}]})
+#   ok: [localhost] => (item={'assets': [{'foo': [{'bar': 'findme3'}]}]})
+# This is a dictionary with one key ('assets'), the value of which is a list of one item ('foo') which is another (nested) dictionary, the value of which is another list of multiple dictionaries
+# Each dictionary is considered a separate object, that's how they there can be multiple values for a 'bar' key across multiple dictionaries in the same list
+# If the 'bar' key was repeated within the same dicitonary (aka object), the final value would overwrite all other values of 'bar' in that dictionary
+# You could access the value of all "bar" keys, with:
+#   extracted_keys: "{{ extracted_keys | default([]) + item.assets | map(attribute='foo') | flatten | map(attribute='bar') | list }}"
+#   - Initialize an empty list with `extracted_keys | default([])`
+#   - `item` is the keyword being looped over, in this case JSON data, .assets is the first "object" in the data to be accessed
+# To explain `map()` + `flatten`, take the following JSON data structure:
+#   {"assets": [{"foo": [{"bar": "findme","baz": {"alpha": {"beta": [{"gamma": "delta"}]}}}]}]}
+# You could access the "gamma" key's value of "delta" with:
+#   extracted_keys: "{{ extracted_keys | default([]) + item.assets | map(attribute='foo') | flatten | map(attribute='baz.alpha.beta') | flatten | map(attribute='gamma') | flatten | list }}"
+# - Each list must be map()'d and flattened like above to access elements within it: item.assets | map(attribute='foo') | flatten | ...
+# - That will give you access to all the objects within the "foo" list
+# - Otherwise you can access / traverse subsequent nested objects like this: item.assets.foo.bar until you reach another list
+# - See this example: https://docs.ansible.com/ansible/latest/playbook_guide/complex_data_manipulation.html#extract-keys-from-a-dictionary-matching-elements-from-a-list
+# Read basenames of a list with {{ my_url_list | map('basename') | list }}
+#   https://stackoverflow.com/questions/64766297/save-the-base-name-of-each-path-in-a-list-to-a-new-list
+# Test strings with reject('<plugin>', '<string>') where plugin could be search, match, equalto, regex, etc.
+#   https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_tests.html#testing-strings
+# .results is used to access the return value of loops
+#   https://docs.ansible.com/ansible/latest/reference_appendices/common_return_values.html#results
+
+- name: "Obtain latest release info for external GitHub packages (UAC)"
+  ansible.builtin.uri:
+    url: "https://api.github.com/repos/{{ item }}/releases/latest"
+    return_content: true
+  register: response_json
+  with_items:
+    - tclahr/uac
+
+- name: "Gather browser_download_url values from latest releases via API (UAC)"
+  set_fact:
+    browser_download_urls: "{{ browser_download_urls | default([]) + item.json.assets | map(attribute='browser_download_url') | list }}"
+  loop: "{{ response_json.results }}"
+  when: item.json.assets[0].browser_download_url is defined
+
+- name: "Register version information (UAC)"
+  set_fact:
+    name_version: "{{ item.json.name }}"
+  loop: "{{ response_json.results }}"
+  when: item.json.assets[0].browser_download_url is defined
+
+# - name: Debug all download URLs
+#   ansible.builtin.debug:
+#     msg: "{{ browser_download_urls }}"
+#     #msg: "{{ browser_download_urls | map('basename') | list }}"
+
+- name: "Check destination folder for each release file (UAC)"
+  ansible.builtin.stat:
+    path: "{{ uac_download_folder }}/{{ item }}"
+  register: release_file
+  with_items: "{{ browser_download_urls | map('basename') | list }}"
+
+# with_together (replaced by loop: "{{ list_one|zip(list_two)|list }}") lets you reference two lists in a single loop as an array
+# with_together is left as-is for readability
+# The loop: syntax can be uncommented to replace with_together:
+# Regardless of the syntax used, the first list is accessed as index [0], then the next list as [1], etc.
+#   https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_loops.html#with-together
+# In other words, do something if package does NOT exist
+- name: "Download missing release files (UAC)"
+  ansible.builtin.get_url:
+    url: "{{ item.0 }}"
+    dest: "{{ uac_download_folder }}/"
+    mode: "0600"
+  when: not item.1.stat.exists
+  with_together:
+    - "{{ browser_download_urls }}"
+    - "{{ release_file.results }}"
+  # loop: "{{ browser_download_urls | zip(release_file.results) | list }}"
+
+# Update the variable of the UAC tool files
+- name: "Register release files (UAC)"
+  ansible.builtin.stat:
+    path: "{{ uac_download_folder }}/{{ item }}"
+  register: release_file
+  with_items: "{{ browser_download_urls | map('basename') | list }}"
+
+# Do something if package exists, and endswith('.ext')
+- name: "Check SHA256SUM (UAC)"
+  ansible.builtin.shell: |
+    set -o pipefail
+    sha256sum -c "{{ item.item }}"
+  args:
+    # executable: /bin/bash
+    chdir: "{{ uac_download_folder }}/"
+  when: item.stat.exists and (item.item.endswith('.sha256'))
+  loop: "{{ release_file.results }}"
+
+# Do something if package exists, and endswith('.ext')
+- name: "Unpack release archive (UAC)"
+  ansible.builtin.shell: |
+    set -o pipefail
+    tar -xzvf "{{ item.item }}"
+  args:
+    # executable: /bin/bash
+    chdir: "{{ uac_download_folder }}/"
+  when: item.stat.exists and (item.item.endswith('.tar.gz'))
+  loop: "{{ release_file.results }}"
+
+# This uses the remote machine's system and arch
+- name: "Create folder structure for precompiled binaries"
+  ansible.builtin.file:
+    path: "{{ uac_download_folder }}/{{ name_version }}/bin/{{ ansible_system | lower }}/{{ ansible_architecture }}"
+    state: directory
+    mode: '0750'
+
+# This uses the remote machine's system and arch
+- name: "Copy any precompiled binaries to UAC's bin/ path"
+  ansible.builtin.copy:
+    remote_src: false
+    src: "{{ item }}"
+    dest: "{{ uac_download_folder }}/{{ name_version }}/bin/{{ ansible_system | lower }}/{{ ansible_architecture }}/"
+    mode: '0750'
+  with_fileglob:
+    - "{{ ansible_system | lower }}/{{ ansible_architecture }}/*"
+
+# Avoids duplicate or potentially modifed evidence from being retrieved
+- name: "Clean up any existing or leftover evidence files"
+  ansible.builtin.shell: |
+    set -o pipefail
+    rm -rf ./uac-.*.tar.gz
+    rm -rf ./uac-.*.log
+  args:
+    # executable: /bin/bash
+    chdir: "{{ uac_outfolder }}"
+
+# If you choose to use an artifact list, run UAC against those.
+- name: "Run UAC with an artifacts list"
+  ansible.builtin.shell: |
+    set -o pipefail
+    ./uac -a {{ uac_artifacts_list | join(',') }} {{ uac_outfile_arg }} {{ uac_outfolder }}
+  args:
+    # executable: /bin/bash
+    chdir: "{{ uac_download_folder }}/{{ name_version }}"
+  when: (uac_use_artifact_list | bool) and
+        (uac_artifacts_list | length > 0)
+  become: true
+  become_method: ansible.builtin.sudo
+
+# If you did not choose to use an artifact list, run the standard ir_triage profile.
+- name: "Run UAC profile: {{ uac_profile }}"
+  ansible.builtin.shell: |
+    set -o pipefail
+    ./uac {{ uac_profile }} {{ uac_outfile_arg }} {{ uac_outfolder }}
+  args:
+    # executable: /bin/bash
+    chdir: "{{ uac_download_folder }}/{{ name_version }}"
+  when: uac_use_artifact_list != "true"
+  become: true
+  become_method: ansible.builtin.sudo
+
+# TO DO: this should be changed to use `uac_outfile_name` once the -o option is added
+- name: "Register resulting evidence files"
+  ansible.builtin.find:
+    paths: "{{ uac_outfolder }}"
+    file_type: file
+    use_regex: true
+    patterns:
+      - "^uac-{{ ansible_hostname }}-{{ ansible_system | lower }}-{{ ansible_date_time.year }}.*(tar\\.gz|log)$"
+  register: evidence_files
+
+# - name: "Print evidence_files"
+#   ansible.builtin.debug:
+#     msg: "{{ evidence_files['files'] | map(attribute='path') | list }}"
+
+- name: "Get the stats of the evidence files"
+  ansible.builtin.stat:
+    path: "{{ item }}"
+    checksum_algorithm: sha256
+    get_mime: true
+  register: evidence_files_src
+  with_items:
+    - "{{ evidence_files['files'] | map(attribute='path') | list }}"
+
+# https://docs.ansible.com/ansible/latest/collections/community/general/docsite/filter_guide_abstract_informations_dictionaries.html
+- name: "Print the stats of the evidence files"
+  ansible.builtin.debug:
+    msg: "{{ dict([['Path', item.stat.path], ['SHA256', item.stat.checksum], ['mtime', item.stat.mtime], ['mimetype', item.stat.mimetype], ['inode', item.stat.inode]]) }}"
+  with_items:
+    - "{{ evidence_files_src.results }}"

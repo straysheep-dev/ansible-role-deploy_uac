@@ -1,0 +1,85 @@
+---
+# deploy_uac/tasks/retrieve-evidence.yml
+
+# Uses the evidence_files_src variable on the remote node to pull those files back locally.
+- name: "Retrieve evidence files ({{ ansible_hostname }})"
+  ansible.builtin.fetch:
+    src: "{{ item.path }}"
+    dest: /tmp/
+    flat: true
+  with_items:
+    - "{{ evidence_files_src.results | map(attribute='stat') }}"
+
+# Deletes the remote evidence files once they're available locally
+- name: "Remove evidence files from ({{ ansible_hostname }})"
+  ansible.builtin.shell: |
+    set -o pipefail
+    rm -rf {{ uac_outfolder }}
+  # args:
+    # executable: /bin/bash
+
+# Removes ALL UAC data from the remote host
+- name: "Remove all UAC files from ({{ ansible_hostname }})"
+  ansible.builtin.shell: |
+    set -o pipefail
+    rm -rf {{ uac_outfolder }}
+    rm -rf {{ uac_download_folder }}
+  # args:
+    # executable: /bin/bash
+  when: uac_cleanup | bool
+
+# Create a new variable to work with, evidence_files_dest, for the retrieved files.
+- name: "Register retrieved evidence files"
+  ansible.builtin.find:
+    paths: /tmp
+    file_type: file
+    use_regex: true
+    patterns:
+      - "^uac-{{ ansible_hostname }}-{{ ansible_system | lower }}-{{ ansible_date_time.year }}.*(tar\\.gz|log)$"
+  register: evidence_files_dest
+
+# Update that variable of the retrieved files with their stats.
+- name: "Get the stats of the retrieved files"
+  ansible.builtin.stat:
+    path: "{{ item }}"
+    checksum_algorithm: sha256
+    get_mime: true
+  register: evidence_files_dest
+  with_items:
+    - "{{ evidence_files_dest['files'] | map(attribute='path') | list }}"
+
+# - name: Debug evidence_files_*
+#   ansible.builtin.debug:
+#     msg: "{{ item.checksum }}"
+#   with_items:
+#     - "{{ evidence_files_dest.results | map(attribute='stat') }}"
+
+# Check the hash of the retrieved evidence files, against the hash taken on the remote machine
+# TO DO: This doesn't necessarily prevent evidence tampering, but the task itself is a useful reference
+- name: Verify SHA256SUM of retrieved evidence files
+  ansible.builtin.shell: |
+    set -o pipefail
+    sha256sum {{ item.0.path | string }} | grep {{ item.1.checksum | string }}
+  args:
+    # executable: /bin/bash
+    chdir: /tmp
+  with_together:
+    - "{{ evidence_files_dest.results | map(attribute='stat') }}"
+    - "{{ evidence_files_src.results | map(attribute='stat') }}"
+  # loop: "{{ TO DO }}"
+
+- name: "Ensure local evidence archive folder exists"
+  ansible.builtin.file:
+    path: "{{ uac_evidence_folder }}"
+    state: directory
+    mode: '0750'
+
+- name: Move resulting files to local evidence folder
+  ansible.builtin.shell: |
+    set -o pipefail
+    mv {{ item.path | string }} -t {{ uac_evidence_folder }}
+  args:
+    # executable: /bin/bash
+    chdir: /tmp
+  with_items:
+    - "{{ evidence_files_dest.results | map(attribute='stat') }}"
