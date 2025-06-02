@@ -19,7 +19,11 @@ The options available as variables can be useful during a live response scenario
 - Provide a list of artifacts to collect
 - Specify the paths to download and run UAC on remote hosts
 
-Mostly this allows you to collect evidence from an entire inventory at scale. The variables create opportunities to vary and adust how UAC is deployed in the event an adversary has direct access to an endpoint and actively tries to interfere with `uac`. With that in mind, `ansible.builtin.stat` is used to record the path (filename), checksum, mtime, mimetype, and inode of the resulting `.log` and `.tar.gz` files as soon as they're written to disk, and again once you retrieve them using `ansible.builtin.fetch`. If there's a mismatch in SHA256SUMS, the play for that host fails. The idea is this makes the effort to prevent modification of the archives themselves, however malicious data can still be present *within* the `.tar.gz` archive.
+Mostly this allows you to collect evidence from an entire inventory at scale. The variables create opportunities to vary and adust how UAC is deployed in the event an adversary has direct access to an endpoint and actively tries to interfere with `uac`.
+
+With that in mind, `ansible.builtin.stat` is used to record the path (filename), checksum, mtime, mimetype, and inode of the resulting `.log` and `.tar.gz` files as soon as they're written to disk, and again once you retrieve them using `ansible.builtin.fetch`.
+
+If there's a mismatch in SHA256SUMS, the play for that host fails. The idea is this makes the effort to prevent modification of the archives themselves, however malicious data can still be present *within* the `.tar.gz` archive.
 
 > [!IMPORTANT]
 > *In my testing, I was not able to inject a random file into the archive by writing it to the `uac-data.tmp` folder as it's gathering evidence on a system. I was however able to replace one of the `.txt` files with an ELF binary. **Use caution when reviewing retrieved evidence**.*
@@ -31,7 +35,7 @@ The remote nodes must be a Unix-like OS. UAC supports the following systems:
 
 > AIX, Android, ESXi, FreeBSD, Linux, macOS, NetBSD, NetScaler, OpenBSD and Solaris
 
-This role has been tested on:
+**This role has been tested on:**
 
 - Linux (Debian/Ubuntu, Fedora)
 - FreeBSD, pfSense
@@ -53,7 +57,7 @@ fatal: [10.10.10.55]: FAILED! => {"ansible_facts": {}, "changed": false, "failed
 > [!TIP]
 > The versions found to be the most successful for these use cases are Ansible 2.13.0 or above.
 
-This role has been tested using:
+**This role has been tested using:**
 
 - ansible-playbook [core 2.17.12]
 - ansible-playbook [core 2.13.0]
