@@ -5,6 +5,8 @@ deploy_uac
 
 Drops the latest release of [UAC (Unix-like Artifacts Collector)](https://github.com/tclahr/uac) and any precompiled binaries found in this role's `files/` folder, across an inventory to gather and retrieve evidence.
 
+**Using Static Binaries**
+
 If you create precompiled binaries, make sure [the required directory structure](https://tclahr.github.io/uac-docs/#using-your-binary-files) exists under `files/` like this:
 
 ```bash
@@ -13,20 +15,33 @@ deploy_uac/files/aix/powerpc/lsof
 deploy_uac/files/android/aarch64/netstat
 ```
 
+**Arguments as Variables**
+
 The options available as variables can be useful during a live response scenario to customize how UAC is deployed and what it collects.
 
 - Choose a profile to use
 - Provide a list of artifacts to collect
 - Specify the paths to download and run UAC on remote hosts
 
-Mostly this allows you to collect evidence from an entire inventory at scale. The variables create opportunities to vary and adust how UAC is deployed in the event an adversary has direct access to an endpoint and actively tries to interfere with `uac`.
+Mostly, this allows you to collect evidence from an entire inventory at scale. The variables create opportunities to adjust how UAC is deployed in the event an adversary has direct access to an endpoint and actively tries to interfere with `uac`.
 
-With that in mind, `ansible.builtin.stat` is used to record the path (filename), checksum, mtime, mimetype, and inode of the resulting `.log` and `.tar.gz` files as soon as they're written to disk, and again once you retrieve them using `ansible.builtin.fetch`.
+**Evidence Retrieval**
+
+`ansible.builtin.stat` is used to record the path (filename), checksum, mtime, mimetype, and inode of the resulting `.log` and `.tar.gz` files as soon as they're written to disk, and again once you retrieve them using `ansible.builtin.fetch`.
+
+*Currently this role only supports the Ansible controller node as the machine to receive all evidence files.*
 
 If there's a mismatch in SHA256SUMS, the play for that host fails. The idea is this makes the effort to prevent modification of the archives themselves, however malicious data can still be present *within* the `.tar.gz` archive.
 
 > [!IMPORTANT]
 > *In my testing, I was not able to inject a random file into the archive by writing it to the `uac-data.tmp` folder as it's gathering evidence on a system. I was however able to replace one of the `.txt` files with an ELF binary. **Use caution when reviewing retrieved evidence**.*
+
+**To-do List**
+
+Things that would make this role more useful.
+
+- Specify another remote host as the machine to receive the evidence files, not just the controller node
+- Create a role to build static binaries of useful IR utilities (on the controller node or a remote dev node?)
 
 Requirements
 ------------
@@ -117,7 +132,7 @@ These control where and how the evidence is written on the remote node. The `-o`
 
 This sets the path where all of your UAC evidence will be stored back on your local machine:
 
-- `uac_evidence_folder: "/home/{{ ansible_facts['env']['USER'] }}/uac-evidence"` Local folder where evidence archives are retrieved and stored
+- `uac_evidence_folder: "{{ lookup('ansible.builtin.env', 'HOME') }}/uac-evidence"` Local folder where evidence archives are retrieved and stored, works for `root` and `/home` users
 
 Example inventory file (YAML works better for defining `uac_artifacts_list`):
 
@@ -200,4 +215,4 @@ License
 Author Information
 ------------------
 
-https://github.com/straysheep-dev/ansible-configs
+[straysheep-dev/ansible-configs](https://github.com/straysheep-dev/ansible-configs)
