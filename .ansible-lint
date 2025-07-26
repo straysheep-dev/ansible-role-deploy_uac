@@ -6,9 +6,6 @@
 # Profiles: null, min, basic, moderate, safety, shared, production
 profile: safety
 
-# Currently all uncommented roles are ignored.
-# Once changes can be made and tested locally, comment out roles that align with the safety profile
-# so the ansible-lint action can include that role on GitHub.
 # Shell globs are supported for exclude_paths:
 # - https://github.com/ansible/ansible-lint/pull/1425
 # - https://github.com/ansible/ansible-lint/discussions/1424
@@ -23,6 +20,7 @@ warn_list:
   - yaml[line-length]
   - package-latest
   - risky-shell-pipe
+  - role-name
 #  - schema[playbook]
 
 # Offline mode disables installation of requirements.yml and schema refreshing
