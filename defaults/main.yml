@@ -12,7 +12,12 @@ uac_outfile_name: "uac-{{ ansible_hostname }}-{{ ansible_system | lower }}-{{ an
 uac_outfile_arg: ""                                           # Leave this variable empty to use the default filename of uac-%hostname%-%os%-%timestamp%
 uac_outfolder: "{{ uac_download_folder }}/results"            # Where to write the resulting evidence archive, should be its own folder
 
-uac_evidence_folder: "/home/{{ ansible_facts['env']['USER'] }}/uac-evidence"  # Local folder where evidence archives are retrieved and stored
+# https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_vars_facts.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/env_lookup.html
+# env_lookup() allows you to query variables on the *controller node*
+# This is useful in combination with the tasks using delegate_to: localhost, to work with
+# the evidence files that are now local on the Ansible controller node
+uac_evidence_folder: "{{ lookup('ansible.builtin.env', 'HOME') }}/uac-evidence"  # Local folder where evidence archives are retrieved and stored, works for root and /home users
 
 uac_use_artifact_list: false        # Set to true to use the artifacts listed below
 # Use this to collect a list of specific artifacts, otherwise it will gather everything -p <PROFILE> is configured to collect
