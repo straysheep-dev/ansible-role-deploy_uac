@@ -1,0 +1,36 @@
+# .github/workflows/molecule.yml
+# SPDX-License-Identifier: MIT
+
+# Taken from the following examples:
+# - https://ansible.readthedocs.io/projects/molecule/ci/#github-actions
+# - https://github.com/geerlingguy/ansible-role-docker/blob/master/.github/workflows/ci.yml
+
+# Additional Notes:
+# - Docker already exists on GitHub's runner images and does not need to be installed
+# - https://github.com/actions/runner-images?tab=readme-ov-file#available-images
+# - actions/setup-python@v5 can be used to install a specific version of python if needed
+# - https://github.com/actions/setup-python
+
+name: molecule
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: deploy_uac
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip ansible molecule molecule-plugins[docker] docker
+      - name: Test with molecule
+        run: |
+          molecule test -d docker
+        env:
+          PY_COLORS: '1'
+          ANSIBLE_FORCE_COLOR: '1'
