@@ -1,0 +1,18 @@
+---
+# molecule/default/converge.yml
+# SPDX-License-Identifier: MIT
+#
+# The converge.yml file is the Ansible playbook Molecule uses to run roles and collections
+# across the containers / VM's it builds. Anything you'd normally configure for roles in
+# the playbook.yml file can be set here.
+
+- name: Converge
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Enumerate Ansible Facts
+      ansible.builtin.debug:
+        # msg: "This is the effective test"
+        var: ansible_facts['system']
+  roles:
+    - role: straysheep_dev.deploy_uac

@@ -1,0 +1,34 @@
+---
+# molecule/default/molecule.yml
+# SPDX-License-Identifier: MIT
+#
+# The molecule.yml file configures Molecule itself.
+#
+# Built from the following sources:
+# - https://github.com/geerlingguy/ansible-role-docker/blob/master/molecule/default/molecule.yml
+# - https://ansible.readthedocs.io/projects/molecule/getting-started/#inspecting-the-moleculeyml
+
+role_name_check: 1
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: debian-latest
+    image: debian:latest
+    pre_build_image: false
+    dockerfile: debian.Dockerfile
+  - name: ubuntu-latest
+    image: ubuntu:latest
+    pre_build_image: false
+    dockerfile: ubuntu.Dockerfile
+  - name: fedora-latest
+    image: fedora:latest
+    pre_build_image: false
+    dockerfile: fedora.Dockerfile
+provisioner:
+  name: ansible
+  playbooks:
+    converge: converge.yml
+verifier:
+  name: ansible
