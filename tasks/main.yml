@@ -3,13 +3,13 @@
 
 - name: "Include evidence generation tasks"
   include_tasks: generate-evidence.yml
-  when: (ansible_facts['system'] == "Linux") or
-        (ansible_facts['system'] == "FreeBSD")
+  when: (ansible_system == "Linux") or
+        (ansible_system == "FreeBSD")
 
 - name: "Include evidence retrieval tasks"
   include_tasks: retrieve-evidence.yml
-  when: ((ansible_facts['system'] == "Linux") or
-        (ansible_facts['system'] == "FreeBSD")) and
+  when: ((ansible_system == "Linux") or
+        (ansible_system == "FreeBSD")) and
         (uac_retrieve_evidence | bool)
 
 # TO DO: test on OpenBSD, other platforms
