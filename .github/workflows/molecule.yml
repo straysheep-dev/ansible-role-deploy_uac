@@ -4,6 +4,7 @@
 # Taken from the following examples:
 # - https://ansible.readthedocs.io/projects/molecule/ci/#github-actions
 # - https://github.com/geerlingguy/ansible-role-docker/blob/master/.github/workflows/ci.yml
+# - https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/set-default-values-for-jobs
 
 # Additional Notes:
 # - Docker already exists on GitHub's runner images and does not need to be installed
@@ -17,6 +18,9 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+defaults:
+  run:
+    working-directory: 'deploy_uac'
 jobs:
   build:
     runs-on: ubuntu-latest
