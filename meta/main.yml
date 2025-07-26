@@ -1,4 +1,6 @@
 galaxy_info:
+  role_name: deploy_uac
+  namespace: straysheep_dev
   author: straysheep-dev
   description: Drops the latest release of UAC (Unix-like Artifacts Collector) and any precompiled binaries found in this role's `files/` folder, across an inventory to gather and retrieve evidence.
   # company: your company (optional)
