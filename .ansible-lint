@@ -14,12 +14,13 @@ exclude_paths:
   - .git/                     # always ignore
   - .github/                  # always ignore
   - "tests/"                  # ignore tests/ folder
+  - molecule/default/converge.yml  # Will fail when the role isn't in your path
 
 # Process the following rules as warnings, and not fatal errors, globally
 warn_list:
   - yaml[line-length]
   - package-latest
-  - risky-shell-pipe
+  - risky-shell-pipe  # Specific to this role
   - role-name
 #  - schema[playbook]
 
