@@ -1,2 +1,13 @@
 ---
 # vars file for deploy_uac
+
+# Initialize any lists here as empty lists to avoid jinja2 syntax errors
+# This is being added here and not under defaults/ because this list should be populated by the tasks in the role,
+# not defined by the user
+# References:
+# - https://www.jeffgeerling.com/blog/2017/adding-strings-array-ansible
+# - https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html#understanding-variable-precedence
+# Example error from GitHub Actions log:
+#   jinja[invalid]: Error rendering template: can only concatenate list (not "UndefinedMarker") to list
+#   tasks/generate-evidence.yml:75:28 Task/Handler: Gather browser_download_url values from latest releases via API (UAC)
+browser_download_urls: []
