@@ -10,11 +10,20 @@
     state: directory
     mode: '0700'
 
+# Avoids duplicate or potentially modifed evidence from being retrieved
+- name: "Clean up any existing or leftover evidence files"
+  ansible.builtin.file:
+    path: "{{ uac_outfolder }}"
+    state: absent
+
+# Recreates that temporary evidence folder we just deleted
 - name: "Ensure temporary working folder exists"
   ansible.builtin.file:
     path: "{{ uac_outfolder }}"
     state: directory
     mode: '0700'
+  tags:
+    - molecule-idempotence-notest
 
 # This section was taken from https://github.com/straysheep-dev/ansible-role-build_kali_desktop/blob/main/tasks/tools-TEMPLATE.yml#L49
 # ================================
@@ -127,6 +136,8 @@
     chdir: "{{ uac_download_folder }}/"
   when: item.stat.exists and (item.item.endswith('.sha256'))
   loop: "{{ release_file.results }}"
+  tags:
+    - molecule-idempotence-notest
 
 # Do something if package exists, and endswith('.ext')
 - name: "Unpack release archive (UAC)"
@@ -138,6 +149,8 @@
     chdir: "{{ uac_download_folder }}/"
   when: item.stat.exists and (item.item.endswith('.tar.gz'))
   loop: "{{ release_file.results }}"
+  tags:
+    - molecule-idempotence-notest
 
 # This uses the remote machine's system and arch
 - name: "Create folder structure for precompiled binaries"
@@ -155,16 +168,8 @@
     mode: '0750'
   with_fileglob:
     - "{{ ansible_system | lower }}/{{ ansible_architecture }}/*"
-
-# Avoids duplicate or potentially modifed evidence from being retrieved
-- name: "Clean up any existing or leftover evidence files"
-  ansible.builtin.shell: |
-    # set -o pipefail
-    rm -rf ./uac-.*.tar.gz
-    rm -rf ./uac-.*.log
-  args:
-    # executable: /bin/sh
-    chdir: "{{ uac_outfolder }}"
+  tags:
+    - molecule-idempotence-notest
 
 # If you choose to use an artifact list, run UAC against those.
 - name: "Run UAC with an artifacts list"
@@ -178,6 +183,8 @@
         (uac_artifacts_list | length > 0)
   become: true
   become_method: ansible.builtin.sudo
+  tags:
+    - molecule-idempotence-notest
 
 # If you did not choose to use an artifact list, run the standard ir_triage profile.
 - name: "Run UAC profile: {{ uac_profile }}"
@@ -190,6 +197,8 @@
   when: uac_use_artifact_list != "true"
   become: true
   become_method: ansible.builtin.sudo
+  tags:
+    - molecule-idempotence-notest
 
 # TO DO: this should be changed to use `uac_outfile_name` once the -o option is added
 - name: "Register resulting evidence files"

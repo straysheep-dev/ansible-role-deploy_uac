@@ -13,6 +13,8 @@
     flat: true
   with_items:
     - "{{ evidence_files_src.results | map(attribute='stat') }}"
+  tags:
+    - molecule-idempotence-notest
 
 # Deletes the remote evidence files once they're available locally
 - name: "Remove evidence files from ({{ ansible_hostname }})"
@@ -21,6 +23,8 @@
     rm -rf {{ uac_outfolder }}
   # args:
     # executable: /bin/sh
+  tags:
+    - molecule-idempotence-notest
 
 # Removes ALL UAC data from the remote host
 - name: "Remove all UAC files from ({{ ansible_hostname }})"
@@ -31,6 +35,8 @@
   # args:
     # executable: /bin/sh
   when: uac_cleanup | bool
+  tags:
+    - molecule-idempotence-notest
 
 # Create a new variable to work with, "evidence_files_dest_tmp", for the retrieved files.
 - name: "Register retrieved evidence files"
@@ -75,6 +81,8 @@
     - "{{ evidence_files_src.results | map(attribute='stat') }}"
   # loop: "{{ TO DO }}"
   delegate_to: localhost
+  tags:
+    - molecule-idempotence-notest
 
 - name: "Ensure local evidence archive folder exists"
   ansible.builtin.file:
@@ -93,3 +101,5 @@
   with_items:
     - "{{ evidence_files_dest.results | map(attribute='stat') }}"
   delegate_to: localhost
+  tags:
+    - molecule-idempotence-notest
