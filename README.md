@@ -5,6 +5,18 @@ deploy_uac
 
 Drops the latest release of [UAC (Unix-like Artifacts Collector)](https://github.com/tclahr/uac) and any precompiled binaries found in this role's `files/` folder, across an inventory to gather and retrieve evidence.
 
+**Molecule Test Coverage**
+
+This role is being executed by [molecule](https://github.com/ansible/molecule) through GitHub Actions on the following systems:
+
+| Operating System | Version | Dockerfile |
+| :---: | :---: | :---: |
+| ![Static Badge](https://img.shields.io/badge/Debian-white?logo=debian&logoColor=red) | [debian:latest](https://hub.docker.com/_/ubuntu) | [`debian.Dockerfile`](./molecule/default/debian.Dockerfile) |
+| ![Static Badge](https://img.shields.io/badge/Fedora-white?logo=fedora) | [fedora:latest](https://hub.docker.com/_/debian) | [`fedora.Dockerfile`](./molecule/default/fedora.Dockerfile) |
+| ![Static Badge](https://img.shields.io/badge/Ubuntu-orange?logo=ubuntu&logoColor=white) | [ubuntu:latest](https://hub.docker.com/_/fedora) | [`ubuntu.Dockerfile`](./molecule/default/ubuntu.Dockerfile) |
+
+*The goal is to test all major distros, including older versions.*
+
 **Using Static Binaries**
 
 If you create precompiled binaries, make sure [the required directory structure](https://tclahr.github.io/uac-docs/#using-your-binary-files) exists under `files/` like this:
